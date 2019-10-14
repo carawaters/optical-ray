@@ -17,9 +17,9 @@ class Ray:
     def __init__(self, pos=[0.0, 0.0, 0.0], direc=[0.0, 0.0, 0.0]):
         self._r = sp.array(pos)
         self._d = sp.array(direc)
-        squares = self._d**2
-        mag = sp.sqrt(squares[0] + squares[1] + squares[2])
-        self._dhat = self._d/mag
+        squares_d = self._d**2
+        mag_d = sp.sqrt(squares_d[0] + squares_d[1] + squares_d[2])
+        self._dhat = self._d/mag_d
         self.poslist = [sp.array(pos)]
         self.dirlist = [sp.array(direc)]
 
@@ -58,5 +58,25 @@ class SphericalRefraction(OpticalElement):
         self.curve = curve
         self.n1 = n1
         self.n2 = n2
-        self.aperture = aperture
+        self.aperture = aperture # specifying in y direction
         OpticalElement.__init__(self)
+
+    def intercept(self, ray):
+        # can only intercept where aperture is
+        # curved surface centre is at z0, not zero
+        squares_p = self.p**2
+        mag_p = sp.sqrt(squares_p[0] + squares_p[1] + squares_p[2])
+        rad = 1/self.curve
+        ray.l_pos = - sp.dot(ray.p,ray.k) + sp.sqrt((sp.dot(ray.p,ray.k))**2 - (mag_p**2 - rad**2))
+        ray.l_neg = - sp.dot(ray.p,ray.k) - sp.sqrt((sp.dot(ray.p,ray.k))**2 - (mag_p**2 - rad**2))
+        if ray.l_pos > ray.l_neg:
+            ray.l = ray.l_neg
+        elif ray.l_pos < ray.l_neg:
+            ray.l = ray.l_pos
+        elif ray.l_pos = ray.l_neg:
+            ray.l = ray.l_pos
+        elif (ray.l_pos*ray.k)[1] > self.aperture or (ray.l_pos*ray.k)[1] > self.aperture:
+            return None # may not give correct result - 2nd intercept may be > 1st in aperture direction
+        else:
+            print("Error: Possibility unexpected") # placeholder error
+
