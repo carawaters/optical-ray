@@ -10,7 +10,7 @@ import scipy as sp
 
 class Ray:
     """
-    Ray class gives a ray with a list of positions and direction vectors.
+    Gives a ray with a list of positions and direction vectors.
     Initialisation takes 3d lists for position and direction.
     """
 
@@ -40,12 +40,11 @@ class OpticalElement:
     """
 
     """
-
-    def __init__(self):
-        # add attributes
+    def __init__(self, type):
+        self.type = type
 
     def propagate_ray(self, ray):
-        "propagate a ray through the optical element"
+        """propagate a ray through the optical element"""
         raise NotImplementedError()
 
 class SphericalRefraction(OpticalElement):
@@ -59,12 +58,13 @@ class SphericalRefraction(OpticalElement):
         self.n1 = n1
         self.n2 = n2
         self.aperture = aperture # specifying in y direction
-        OpticalElement.__init__(self)
+        type = "spherical refractor"
+        OpticalElement.__init__(self, type)
 
     def intercept(self, ray):
         # can only intercept where aperture is
         # curved surface centre is at z0, not zero
-        squares_p = self.p**2
+        squares_p = (ray.p)**2 # unsupported operand type, 'method' and 'int'
         mag_p = sp.sqrt(squares_p[0] + squares_p[1] + squares_p[2])
         rad = 1/self.curve
         ray.l_pos = - sp.dot(ray.p,ray.k) + sp.sqrt((sp.dot(ray.p,ray.k))**2 - (mag_p**2 - rad**2))
@@ -73,10 +73,13 @@ class SphericalRefraction(OpticalElement):
             ray.l = ray.l_neg
         elif ray.l_pos < ray.l_neg:
             ray.l = ray.l_pos
-        elif ray.l_pos = ray.l_neg:
+        elif ray.l_pos == ray.l_neg:
             ray.l = ray.l_pos
-        elif (ray.l_pos*ray.k)[1] > self.aperture or (ray.l_pos*ray.k)[1] > self.aperture:
-            return None # may not give correct result - 2nd intercept may be > 1st in aperture direction
         else:
             print("Error: Possibility unexpected") # placeholder error
 
+        # check for intercepting past aperture of surface
+        if (ray.l*ray.k)[1] > self.aperture:
+            return None
+        else:
+            return ray.l
