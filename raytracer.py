@@ -40,7 +40,7 @@ class Ray:
 
 class OpticalElement:
     """
-
+    Base class for all optical elements. Propagates ray through elements.
     """
     def __init__(self, type):
         self.type = type
@@ -51,7 +51,7 @@ class OpticalElement:
 
 class SphericalRefraction(OpticalElement):
     """
-
+    Refractor based on a sphere. Takes position along z, curvature (1/rad), n1, n2, aperture (radius).
     """
 
     def __init__(self, z_0, curve, n1, n2, aperture):
@@ -66,17 +66,20 @@ class SphericalRefraction(OpticalElement):
     def intercept(self, ray):
         # can only intercept where aperture is
         # curved surface centre is at z0, not zero
-        squares_p = sp.power(ray.p(),2) # unsupported operand type, 'method' and 'int'
+        # may need special case for zero curvature
+        squares_p = sp.power(ray.p(), 2)
         mag_p = sp.sqrt(squares_p[0] + squares_p[1] + squares_p[2])
         rad = 1/self.curve
-        ray.l_pos = - sp.dot(ray.p(),ray.k()) + sp.sqrt((sp.dot(ray.p(),ray.k()))**2 - (mag_p**2 - rad**2))
-        ray.l_neg = - sp.dot(ray.p(),ray.k()) - sp.sqrt((sp.dot(ray.p(),ray.k()))**2 - (mag_p**2 - rad**2))
+        ray.l_pos = - sp.dot(ray.p(), ray.k()) + sp.sqrt((sp.dot(ray.p(), ray.k()))**2 - (mag_p**2 - rad**2))
+        ray.l_neg = - sp.dot(ray.p(), ray.k()) - sp.sqrt((sp.dot(ray.p(), ray.k()))**2 - (mag_p**2 - rad**2))
         if mod(ray.l_pos) > mod(ray.l_neg):
             ray.l = ray.l_neg
         elif mod(ray.l_pos) < mod(ray.l_neg):
             ray.l = ray.l_pos
         elif mod(ray.l_pos) == mod(ray.l_neg):
             ray.l = ray.l_pos
+        elif (sp.dot(ray.p(), ray.k()))**2 - (mag_p**2 - rad**2) < 0:
+            print("Error: Values return imaginary result")
         else:
             print("Error: Possibility unexpected") # placeholder error
 
