@@ -7,6 +7,8 @@ Includes a class for an optical ray.
 
 import scipy as sp
 
+def mod(x):
+    return sp.sqrt(x**2)
 
 class Ray:
     """
@@ -64,22 +66,22 @@ class SphericalRefraction(OpticalElement):
     def intercept(self, ray):
         # can only intercept where aperture is
         # curved surface centre is at z0, not zero
-        squares_p = (ray.p)**2 # unsupported operand type, 'method' and 'int'
+        squares_p = sp.power(ray.p(),2) # unsupported operand type, 'method' and 'int'
         mag_p = sp.sqrt(squares_p[0] + squares_p[1] + squares_p[2])
         rad = 1/self.curve
-        ray.l_pos = - sp.dot(ray.p,ray.k) + sp.sqrt((sp.dot(ray.p,ray.k))**2 - (mag_p**2 - rad**2))
-        ray.l_neg = - sp.dot(ray.p,ray.k) - sp.sqrt((sp.dot(ray.p,ray.k))**2 - (mag_p**2 - rad**2))
-        if ray.l_pos > ray.l_neg:
+        ray.l_pos = - sp.dot(ray.p(),ray.k()) + sp.sqrt((sp.dot(ray.p(),ray.k()))**2 - (mag_p**2 - rad**2))
+        ray.l_neg = - sp.dot(ray.p(),ray.k()) - sp.sqrt((sp.dot(ray.p(),ray.k()))**2 - (mag_p**2 - rad**2))
+        if mod(ray.l_pos) > mod(ray.l_neg):
             ray.l = ray.l_neg
-        elif ray.l_pos < ray.l_neg:
+        elif mod(ray.l_pos) < mod(ray.l_neg):
             ray.l = ray.l_pos
-        elif ray.l_pos == ray.l_neg:
+        elif mod(ray.l_pos) == mod(ray.l_neg):
             ray.l = ray.l_pos
         else:
             print("Error: Possibility unexpected") # placeholder error
 
         # check for intercepting past aperture of surface
-        if (ray.l*ray.k)[1] > self.aperture:
+        if mod((ray.l*ray.k())[1]) > self.aperture:
             return None
         else:
             return ray.l
