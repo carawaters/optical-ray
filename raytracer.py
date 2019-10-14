@@ -78,13 +78,11 @@ class SphericalRefraction(OpticalElement):
             ray.l = ray.l_pos
         elif mod(ray.l_pos) == mod(ray.l_neg):
             ray.l = ray.l_pos
-        elif (sp.dot(ray.p(), ray.k()))**2 - (mag_p**2 - rad**2) < 0:
-            print("Error: Values return imaginary result")
         else:
-            print("Error: Possibility unexpected") # placeholder error
+            print("Error: Unknown")
+            ray.l = None
 
-        # check for intercepting past aperture of surface
-        if mod((ray.l*ray.k())[1]) > self.aperture:
+        if sp.iscomplexobj(ray.l) or mod((ray.l*ray.k())[1]) > self.aperture:
             return None
         else:
             return ray.l
