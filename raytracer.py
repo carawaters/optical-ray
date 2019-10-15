@@ -65,14 +65,14 @@ class SphericalRefraction(OpticalElement):
 
     def intercept(self, ray):
         # curved surface z intercept is at z0, not zero
-        # may need special case for zero curvature
+        squares_p = sp.power(ray.p(), 2)
+        mag_p = sp.sqrt(squares_p[0] + squares_p[1] + squares_p[2])
         if self.curve == 0:
             # intercept z must be z_0
             # length of flat surface = aperture
-            ray.l = sp.sqrt(self.z_0**2 + self.aperture**2)
+            cos_ang = sp.dot(ray.p(), sp.array([0., 0., self.z_0]))/(mag_p*self.z_0)
+            ray.l = self.z_0/cos_ang
         else:
-            squares_p = sp.power(ray.p(), 2)
-            mag_p = sp.sqrt(squares_p[0] + squares_p[1] + squares_p[2])
             rad = 1/self.curve
             ray.l_pos = - sp.dot(ray.p(), ray.k()) + sp.sqrt((sp.dot(ray.p(), ray.k()))**2 - (mag_p**2 - rad**2))
             ray.l_neg = - sp.dot(ray.p(), ray.k()) - sp.sqrt((sp.dot(ray.p(), ray.k()))**2 - (mag_p**2 - rad**2))
