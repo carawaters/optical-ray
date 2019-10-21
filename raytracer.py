@@ -82,12 +82,10 @@ class SphericalRefraction(OpticalElement):
     def intercept(self, ray):
         # curved surface z intercept is at z0, not zero
         # this probably doesn't work for negative curvature as it stands
-        squares_p = sp.power(ray.p(), 2)
-        mag_p = sp.sqrt(squares_p[0] + squares_p[1] + squares_p[2])
         if self.curve == 0:
             # intercept z must be z_0
             # length of flat surface = aperture
-            cos_ang = sp.dot(ray.p(), sp.array([0., 0., self.z_0]))/(mag_p*self.z_0)
+            cos_ang = sp.dot(ray.k(), sp.array([0., 0., self.z_0]))/self.z_0
             ray.l = self.z_0/cos_ang
         else:
             rad = 1/self.curve
@@ -114,12 +112,27 @@ class SphericalRefraction(OpticalElement):
         if ray.status == "terminated":
             print("Ray is no longer propagating.")
         else:
-            interceptpt = self.intercept()
+            intercept = ray.p() + (self.intercept() * ray.k())
             direction = ray.k()
-            norm = interceptpt - sp.array(0., 0., self.z_0 + (1/self.curve))
+            norm = intercept - sp.array(0., 0., self.z_0 + (1/self.curve))
             newdirec = snell(ray, norm, n1, n2)
-            if newdirec == None or interceptpt == None:
+            if newdirec == None or intercept == None:
                 ray.status = "terminated"
                 print("Ray is no longer propagating.")
             else:
-                ray.append(interceptpt, newdirec)
+                ray.append(intercept, newdirec)
+
+class OutputPlane(OpticalElement):
+
+    def __init__(self, z_1):
+        type = "ouput plane"
+        OpticalElement.__init__(self, type)
+
+    def intercept(self, ray, z_1):
+        cos_ang = sp.dot(ray.k(), sp.array([0., 0., self.z_0]))/self.z_0
+        ray.l2 = self.z_0/cos_ang
+        return ray.l2
+
+    def propagate_ray(self, ray):
+        intercept = ray.p() + (self.intercept() * ray.k())
+        ray.append(intercept, ray.k())
