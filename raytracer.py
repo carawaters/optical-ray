@@ -32,8 +32,11 @@ class Ray:
         return self._dhat
 
     def append(self, p, k):
+        squares_k = k**2
+        mag_k = sp.sqrt(squares_k[0] + squares_k[1] + squares_k[2])
+        khat = k/mag_k
         self.poslist.append(sp.array(p))
-        self.dirlist.append(sp.array(k))
+        self.dirlist.append(sp.array(khat))
 
     def vertices(self):
         return self.poslist
@@ -90,3 +93,12 @@ class SphericalRefraction(OpticalElement):
             return None
         else:
             return ray.l
+
+    def snell(self, ray, norm = [0., 0., 0.], n1, n2):
+        theta1 = sp.arccos(sp.dot(ray.k(), sp.array(norm)))
+        if sp.sin(theta1) > n1/n2:
+            return None
+        else:
+            theta2 = sp.arcsin(n1/n2 * sp.sin(theta1))
+            k2 = sp.array([ray.k()[0], sp.sin(theta2), sp.cos(theta2)])
+            return k2
