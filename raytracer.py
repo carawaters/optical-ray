@@ -36,6 +36,7 @@ class Ray:
         self._dhat = self._d/mag_d
         self.poslist = [sp.array(pos)]
         self.dirlist = [sp.array(direc)]
+        self.status = "propagating"
 
     def p(self):
         return self.poslist[-1]
@@ -101,15 +102,24 @@ class SphericalRefraction(OpticalElement):
             else:
                 print("Error: Unknown")
                 ray.l = None
+                ray.status = "terminated"
 
         if sp.iscomplexobj(ray.l) or mod((ray.l*ray.k())[1]) > self.aperture:
             return None
+            ray.status = "terminated"
         else:
             return ray.l
 
     def propagate_ray(self, ray, n1, n2):
-        interceptpt = self.intercept()
-        direction = ray.k()
-        norm = interceptpt - sp.array(0., 0., self.z_0 + (1/self.curve))
-        newdirec = snell(ray, norm, n1, n2)
-        ray.append(interceptpt, newdirec)
+        if ray.status == "terminated":
+            print("Ray is no longer propagating.")
+        else:
+            interceptpt = self.intercept()
+            direction = ray.k()
+            norm = interceptpt - sp.array(0., 0., self.z_0 + (1/self.curve))
+            newdirec = snell(ray, norm, n1, n2)
+            if newdirec == None or interceptpt == None:
+                ray.status = "terminated"
+                print("Ray is no longer propagating.")
+            else:
+                ray.append(interceptpt, newdirec)
