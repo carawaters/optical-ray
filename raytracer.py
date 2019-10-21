@@ -19,7 +19,7 @@ def snell(ray, norm = [0., 0., 0.], n1, n2):
         return None
     else:
         theta2 = sp.arcsin(n1/n2 * sp.sin(theta1))
-        k2 = sp.array
+        k2 = sp.array([ray.k()[0], sp.sin(theta2), sp.cos(theta2)])
         return k2
 
 class Ray:
