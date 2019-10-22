@@ -85,7 +85,7 @@ class SphericalRefraction(OpticalElement):
         if self.curve == 0:
             # intercept z must be z_0
             # length of flat surface = aperture
-            cos_ang = sp.dot(ray.k(), sp.array([0., 0., self.z_0]))/self.z_0
+            cos_ang = sp.dot(ray.k(), sp.array([0., 0., (ray.p()[2] - self.z_0]))/(ray.p()[2] - self.z_0])
             ray.l = self.z_0/cos_ang
         else:
             rad = 1/self.curve
@@ -125,12 +125,12 @@ class SphericalRefraction(OpticalElement):
 class OutputPlane(OpticalElement):
 
     def __init__(self, z_1):
-        type = "ouput plane"
+        type = "output plane"
         OpticalElement.__init__(self, type)
 
     def intercept(self, ray, z_1):
-        cos_ang = sp.dot(ray.k(), sp.array([0., 0., self.z_0]))/self.z_0
-        ray.l2 = self.z_0/cos_ang
+        cos_ang = sp.dot(ray.k(), sp.array([0., 0., (ray.p()[2] - self.z_0]))/(ray.p()[2] - self.z_0])
+        ray.l2 = (ray.p()[2] - self.z_0)/cos_ang
         return ray.l2
 
     def propagate_ray(self, ray):
