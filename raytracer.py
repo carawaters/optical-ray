@@ -10,13 +10,13 @@ import scipy as sp
 def mod(x):
     return sp.sqrt(x**2)
 
-def snell(ray, norm = [0., 0., 0.], n1, n2):
+def snell(ray, norm, n1, n2):
     normsquares = sp.array(norm)**2
     mag_norm = sp.sqrt(normsquares[0] + normsquares[1] + normsquares[2])
     normhat = sp.array(norm)/mag_norm
     theta1 = sp.arccos(sp.dot(ray.k(), normhat))
     if sp.sin(theta1) > n1/n2:
-        return None
+        ray.status = "terminated"
     else:
         theta2 = sp.arcsin(n1/n2 * sp.sin(theta1))
         k2 = sp.array([ray.k()[0], sp.sin(theta2), sp.cos(theta2)])
@@ -34,8 +34,8 @@ class Ray:
         squares_d = self._d**2
         mag_d = sp.sqrt(squares_d[0] + squares_d[1] + squares_d[2])
         self._dhat = self._d/mag_d
-        self.poslist = [sp.array(pos)]
-        self.dirlist = [sp.array(direc)]
+        self.poslist = sp.array([sp.array(pos)])
+        self.dirlist = sp.array([sp.array(self._dhat)])
         self.status = "propagating"
 
     def p(self):
@@ -44,12 +44,12 @@ class Ray:
     def k(self):
         return self.dirlist[-1]
 
-    def append(self, p, k):
+    def point_append(self, p, k):
         squares_k = k**2
         mag_k = sp.sqrt(squares_k[0] + squares_k[1] + squares_k[2])
         khat = k/mag_k
-        self.poslist.append(sp.array(p))
-        self.dirlist.append(sp.array(khat))
+        self.poslist = sp.append(self.poslist, sp.array([p]), axis = 0)
+        self.dirlist = sp.append(self.dirlist, [khat], axis = 0)
 
     def vertices(self):
         return self.poslist
@@ -82,12 +82,17 @@ class SphericalRefraction(OpticalElement):
     def intercept(self, ray):
         # curved surface z intercept is at z0, not zero
         # this probably doesn't work for negative curvature as it stands
-        if self.curve == 0:
+        if ray.status == "terminated":
+            print("The ray has terminated.")
+        elif self.curve == 0:
             # intercept z must be z_0
             # length of flat surface = aperture
-            cos_ang = sp.dot(ray.k(), sp.array([0., 0., (ray.p()[2] - self.z_0]))/(ray.p()[2] - self.z_0])
+            p = ray.p()
+            cos_ang = sp.dot(ray.k(), sp.array([0., 0., (p[2] - self.z_0)]))/(p[2] - self.z_0)
             ray.l = self.z_0/cos_ang
         else:
+            squares_p = ray.p()**2
+            mag_p = sp.sqrt(squares_p[0] + squares_p[1] + squares_p[2])
             rad = 1/self.curve
             ray.l_pos = - sp.dot(ray.p(), ray.k()) + sp.sqrt((sp.dot(ray.p(), ray.k()))**2 - (mag_p**2 - rad**2))
             ray.l_neg = - sp.dot(ray.p(), ray.k()) - sp.sqrt((sp.dot(ray.p(), ray.k()))**2 - (mag_p**2 - rad**2))
@@ -99,40 +104,38 @@ class SphericalRefraction(OpticalElement):
                 ray.l = ray.l_pos
             else:
                 print("Error: Unknown")
-                ray.l = None
                 ray.status = "terminated"
 
         if sp.iscomplexobj(ray.l) or mod((ray.l*ray.k())[1]) > self.aperture:
-            return None
             ray.status = "terminated"
         else:
             return ray.l
 
-    def propagate_ray(self, ray, n1, n2):
+    def propagate_ray(self, ray):
         if ray.status == "terminated":
             print("Ray is no longer propagating.")
         else:
-            intercept = ray.p() + (self.intercept() * ray.k())
+            intercept = ray.p() + (self.intercept(ray) * ray.k())
             direction = ray.k()
-            norm = intercept - sp.array(0., 0., self.z_0 + (1/self.curve))
-            newdirec = snell(ray, norm, n1, n2)
-            if newdirec == None or intercept == None:
-                ray.status = "terminated"
-                print("Ray is no longer propagating.")
-            else:
-                ray.append(intercept, newdirec)
+            squares_inter = intercept**2
+            mag_inter = sp.sqrt(squares_inter[0] + squares_inter[1] + squares_inter[2])
+            norm = intercept/mag_inter
+            newdirec = snell(ray, norm, self.n1, self.n2)
+            ray.point_append(intercept, newdirec)
 
 class OutputPlane(OpticalElement):
 
     def __init__(self, z_1):
         type = "output plane"
+        self.z_1 = z_1
         OpticalElement.__init__(self, type)
 
-    def intercept(self, ray, z_1):
-        cos_ang = sp.dot(ray.k(), sp.array([0., 0., (ray.p()[2] - self.z_0]))/(ray.p()[2] - self.z_0])
-        ray.l2 = (ray.p()[2] - self.z_0)/cos_ang
+    def intercept(self, ray):
+        p = ray.p()
+        cos_ang = sp.dot(ray.k(), sp.array([0., 0., (p[2] - self.z_1)]))/(p[2] - self.z_1)
+        ray.l2 = (ray.p()[2] - self.z_1)/cos_ang
         return ray.l2
 
     def propagate_ray(self, ray):
-        intercept = ray.p() + (self.intercept() * ray.k())
-        ray.append(intercept, ray.k())
+        intercept = ray.p() + (self.intercept(ray) * ray.k())
+        ray.point_append(intercept, ray.k())
