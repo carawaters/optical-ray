@@ -12,22 +12,32 @@ surface = rt.SphericalRefraction(z_0 = 100, curve = 0.03, n1 = 1.0, n2 = 1.5, ap
 output = rt.OutputPlane(z_1 = 250)
 
 r1 = rt.Ray(pos = [0., 5., 0.], direc = [0., 2., 3.])
+r2 = rt.Ray(pos = [0., 8., 0.], direc = [0., -2., 3.])
 
-y = []
-z = []
+y1 = []
+z1 = []
+
+y2 = []
+z2 = []
 
 surface.propagate_ray(r1)
 output.propagate_ray(r1)
 
-points = r1.vertices()
-print(points)
-print(points.shape[0])
-for i in range(points.shape[0]):
-    y.append(points[i][1])
-    z.append(points[i][2])
+surface.propagate_ray(r2)
+output.propagate_ray(r2)
 
-print(y)
-print(z)
+points1 = r1.vertices()
+points2 = r2.vertices()
 
-plt.plot(z, y, '-')
+for i in range(points1.shape[0]):
+    y1.append(points1[i][1])
+    z1.append(points1[i][2])
+
+for i in range(points2.shape[0]):
+    y2.append(points2[i][1])
+    z2.append(points2[i][2])
+
+plt.plot(z1, y1, 'r-')
+plt.plot(z2, y2, 'b-')
+
 plt.show()
