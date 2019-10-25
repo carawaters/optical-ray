@@ -7,21 +7,6 @@ Includes a class for an optical ray.
 
 import scipy as sp
 
-def mod(x):
-    return sp.sqrt(x**2)
-
-def snell(ray, norm, n1, n2):
-    normsquares = sp.array(norm)**2
-    mag_norm = sp.sqrt(normsquares[0] + normsquares[1] + normsquares[2])
-    normhat = sp.array(norm)/mag_norm
-    theta1 = sp.arccos(sp.dot(ray.k(), normhat))
-    if sp.sin(theta1) > n1/n2:
-        ray.status = "terminated"
-    else:
-        theta2 = sp.arcsin(n1/n2 * sp.sin(theta1))
-        k2 = sp.array([ray.k()[0], sp.sin(theta2), sp.cos(theta2)])
-        return k2
-
 class Ray:
     """
     Gives a ray with a list of positions and direction vectors.
@@ -31,8 +16,7 @@ class Ray:
     def __init__(self, pos=[0.0, 0.0, 0.0], direc=[0.0, 0.0, 0.0]):
         self._r = sp.array(pos)
         self._d = sp.array(direc)
-        squares_d = self._d**2
-        mag_d = sp.sqrt(squares_d[0] + squares_d[1] + squares_d[2])
+        mag_d = sp.sqrt(sp.dot(self._d, self._d))
         self._dhat = self._d/mag_d
         self.poslist = sp.array([sp.array(pos)])
         self.dirlist = sp.array([sp.array(self._dhat)])
@@ -45,8 +29,7 @@ class Ray:
         return self.dirlist[-1]
 
     def point_append(self, p, k):
-        squares_k = k**2
-        mag_k = sp.sqrt(squares_k[0] + squares_k[1] + squares_k[2])
+        mag_k = sp.sqrt(sp.dot(k, k))
         khat = k/mag_k
         self.poslist = sp.append(self.poslist, sp.array([p]), axis = 0)
         self.dirlist = sp.append(self.dirlist, [khat], axis = 0)
@@ -76,51 +59,77 @@ class SphericalRefraction(OpticalElement):
         self.n1 = n1
         self.n2 = n2
         self.aperture = aperture # specifying in y direction
+        self.origin = sp.array([0., 0., 0.])
         type = "spherical refractor"
         OpticalElement.__init__(self, type)
 
     def intercept(self, ray):
-        # curved surface z intercept is at z0, not zero
-        # this probably doesn't work for negative curvature as it stands
+        # aperture not implemented
         if ray.status == "terminated":
             print("The ray has terminated.")
         elif self.curve == 0:
             # intercept z must be z_0
             # length of flat surface = aperture
-            p = ray.p()
-            cos_ang = sp.dot(ray.k(), sp.array([0., 0., (p[2] - self.z_0)]))/(p[2] - self.z_0)
-            ray.l = self.z_0/cos_ang
-        else:
-            squares_p = ray.p()**2
-            mag_p = sp.sqrt(squares_p[0] + squares_p[1] + squares_p[2])
-            rad = 1/self.curve
-            ray.l_pos = - sp.dot(ray.p(), ray.k()) + sp.sqrt((sp.dot(ray.p(), ray.k()))**2 - (mag_p**2 - rad**2))
-            ray.l_neg = - sp.dot(ray.p(), ray.k()) - sp.sqrt((sp.dot(ray.p(), ray.k()))**2 - (mag_p**2 - rad**2))
-            if mod(ray.l_pos) > mod(ray.l_neg):
-                ray.l = ray.l_neg
-            elif mod(ray.l_pos) < mod(ray.l_neg):
-                ray.l = ray.l_pos
-            elif mod(ray.l_pos) == mod(ray.l_neg):
-                ray.l = ray.l_pos
-            else:
-                print("Error: Unknown")
+            ray.l = self.z_0/ray.k()[2]
+        elif self.curve > 0:
+            self.origin = sp.array([0. , 0., self.z_0]) + sp.array([0., 0., (1/self.curve)])
+            op = self.origin - ray.p()
+            ray_len = sp.dot(ray.k(), op)
+            disc = ray_len**2 - (sp.dot(op, op) - (1/self.curve)**2)
+            if disc <= 0:
+                print("Imaginary solution.")
                 ray.status = "terminated"
-
-        if sp.iscomplexobj(ray.l) or mod((ray.l*ray.k())[1]) > self.aperture:
-            ray.status = "terminated"
+            else:
+                root = sp.sqrt(disc)
+                l = ray_len - abs(root)
+                return ray.p() + ray.k() * l
+            #r_vec = ray.p() - self.origin
+            #print(r_vec)
+            #projection = sp.dot(-r_vec, ray.k())
+            #print(projection)
+            #print(sp.dot(r_vec, r_vec))
+            #d = projection**2 - (sp.dot(r_vec, r_vec) - (1/self.curve)**2)
+            #print(d)
+            #if d <= 0:
+                #print("Ray does not intersect.")
+                #ray.status = "terminated"
+            #else:
+                #ray.l = projection - sp.sqrt(d)
+        elif self.curve < 0:
+            self.origin = self.z_0 - (1/self.curve)
+            r_vec = ray.p() - self.origin
+            projection = sp.dot(-r_vec, ray.k())
+            d = projection**2 - (sp.dot(r_vec, r_vec) - (1/self.curve)**2)
+            if d <= 0:
+                print("Ray does not intersect.")
+                ray.status = "terminated"
+            else:
+                ray.l = projection + sp.sqrt(d)
         else:
-            return ray.l
+            print("Ray intercept not able to be found.")
+            ray.status = "terminated"
+
+            return ray.p() + ray.l * ray.k()
+
+    def snell(self, ray):
+        if (sp.sin(self.n1/self.n2))**2 > 1:
+            print("Ray could not be refracted.")
+            ray.status = "terminated"
+        elif ray.status == "terminated":
+            print("Ray is no longer propagating.")
+        else:
+            normal = self.intercept(ray) - self.origin
+            norm_hat = normal / sp.sqrt(sp.dot(normal, normal))
+            root = sp.sqrt(1 - (self.n1/self.n2)**2 * (1 - sp.dot(ray.k(), norm_hat)))
+            new_direc = (self.n1/self.n2) * ray.k() + ((self.n1/self.n2) * sp.dot(ray.k(), norm_hat) - root) * norm_hat
+            return new_direc
 
     def propagate_ray(self, ray):
+        intercept = self.intercept(ray)
+        newdirec = self.snell(ray)
         if ray.status == "terminated":
             print("Ray is no longer propagating.")
         else:
-            intercept = ray.p() + (self.intercept(ray) * ray.k())
-            direction = ray.k()
-            squares_inter = intercept**2
-            mag_inter = sp.sqrt(squares_inter[0] + squares_inter[1] + squares_inter[2])
-            norm = intercept/mag_inter
-            newdirec = snell(ray, norm, self.n1, self.n2)
             ray.point_append(intercept, newdirec)
 
 class OutputPlane(OpticalElement):
@@ -131,11 +140,15 @@ class OutputPlane(OpticalElement):
         OpticalElement.__init__(self, type)
 
     def intercept(self, ray):
-        p = ray.p()
-        cos_ang = sp.dot(ray.k(), sp.array([0., 0., (p[2] - self.z_1)]))/(p[2] - self.z_1)
-        ray.l2 = (ray.p()[2] - self.z_1)/cos_ang
-        return ray.l2
+        ray.l2 = self.z_1/ray.k()[2]
+        return ray.p() + ray.l2 * ray.k()
 
     def propagate_ray(self, ray):
-        intercept = ray.p() + (self.intercept(ray) * ray.k())
-        ray.point_append(intercept, ray.k())
+        intercept = self.intercept(ray)
+        if sp.iscomplexobj(intercept):
+            print("Ray does not intersect output plane (imaginary).")
+            ray.status = "terminated"
+        elif ray.status == "terminated":
+            print("Ray is no longer propagating.")
+        else:
+            ray.point_append(intercept, ray.k())
