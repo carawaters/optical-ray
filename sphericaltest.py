@@ -6,6 +6,7 @@ A test for a series of rays travelling through a spherical refracting surface.
 """
 
 import raytracer as rt
+from raybundle import Bundle
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 
@@ -16,11 +17,13 @@ output = rt.OutputPlane(z_1 = 250)
 fig = plt.figure()
 ax = plt.axes(projection="3d")
 
-for i in range(-20, 20):
-    r = rt.Ray(pos = [i, 2 * i, 0.], direc = [0., 0., 1.])
+beam = Bundle(5, 2)
+
+for point in beam.circ_points():
     x = []
     y = []
     z = []
+    r = rt.Ray(pos = [point[0], point[1], 0.], direc=[0., 0., 1.])
     surface.propagate_ray(r)
     #surface2.propagate_ray(r)
     output.propagate_ray(r)

@@ -82,10 +82,10 @@ class SphericalRefraction(OpticalElement):
             else:
                 root = sp.sqrt(disc)
                 l = ray_len - abs(root)
-                ray.sph_int = ray.p() + ray.k() * l
-                return ray.sph_int
+                sph_int = ray.p() + ray.k() * l
+                return sph_int
         elif self.curve < 0:
-            self.origin = sp.array([0. , 0., self.z_0]) - sp.array([0., 0., (1/self.curve)])
+            self.origin = sp.array([0. , 0., self.z_0]) - sp.array([0., 0., abs(1/self.curve)])
             op = self.origin - ray.p()
             ray_len = sp.dot(ray.k(), op)
             disc = ray_len**2 - (sp.dot(op, op) - (1/self.curve)**2)
@@ -95,8 +95,8 @@ class SphericalRefraction(OpticalElement):
             else:
                 root = sp.sqrt(disc)
                 l = ray_len + abs(root)
-                ray.sph_int = ray.p() + ray.k() * l
-                return ray.sph_int
+                sph_int = ray.p() + ray.k() * l
+                return sph_int
         else:
             print("Ray intercept not able to be found.")
             ray.status = "terminated"
@@ -133,7 +133,7 @@ class OutputPlane(OpticalElement):
         if ray.status == "terminated":
             print("Ray is no longer propagating.")
         else:
-            ray.l2 = (self.z_1 - ray.sph_int[2])/ray.k()[2]
+            ray.l2 = (self.z_1 - ray.p()[2])/ray.k()[2]
             return ray.p() + ray.l2 * ray.k()
 
     def propagate_ray(self, ray):
