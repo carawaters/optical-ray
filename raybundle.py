@@ -7,6 +7,7 @@ Gives a class of ray bundles.
 
 from raytracer import Ray
 import scipy as sp
+import matplotlib.pyplot as plt
 
 class Bundle:
     """
@@ -19,10 +20,21 @@ class Bundle:
         self.density = density
         self._rays = []
 
-    def circ_points(self):
+    def circ_points(self, radius):
         points = []
-        for t in sp.arange(0, 2 * sp.pi, 1/self.radius * self.density):
-            x = self.radius * sp.cos(t)
-            y = self.radius * sp.sin(t)
+        # version which used self.radius in num - fig 6
+        # version corrected to radius of this loop - fig 7
+        for t in sp.linspace(0, 2 * sp.pi, num = 2 * sp.pi * radius * self.density, endpoint = True):
+            x = radius * sp.cos(t)
+            y = radius * sp.sin(t)
             points.append((x, y))
+        print(points)
         return points
+
+    def con_circs(self):
+        con_points = []
+        for r in sp.linspace(0, self.radius, num = self.radius * self.density, endpoint = True):
+            new_points = self.circ_points(r)
+            con_points.extend(new_points)
+        print(con_points)
+        return con_points
