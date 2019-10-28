@@ -122,6 +122,13 @@ class SphericalRefraction(OpticalElement):
         else:
             ray.point_append(intercept, newdirec)
 
+    def paraxial_focus(self):
+        r1 = Ray(pos = [0., 0.1, 0.], direc = [0., 0., 1.])
+        self.propagate_ray(r1)
+        dist = -r1.p()[1]/r1.k()[1]
+        focus = r1.p()[2] + dist * r1.k()[2]
+        return focus
+
 class OutputPlane(OpticalElement):
 
     def __init__(self, z_1):
