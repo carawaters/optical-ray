@@ -28,7 +28,6 @@ class Bundle:
             x = radius * sp.cos(t)
             y = radius * sp.sin(t)
             points.append((x, y))
-        print(points)
         return points
 
     def con_circs(self):
@@ -36,5 +35,17 @@ class Bundle:
         for r in sp.linspace(0, self.radius, num = self.radius * self.density, endpoint = True):
             new_points = self.circ_points(r)
             con_points.extend(new_points)
-        print(con_points)
         return con_points
+
+"""
+beam = Bundle(2, 5)
+pts = beam.con_circs()
+print(pts)
+x = []
+y = []
+for p in pts:
+    x.append(p[0])
+    y.append(p[1])
+plt.plot(x, y, 'b.')
+plt.show()
+"""

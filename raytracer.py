@@ -127,6 +127,9 @@ class SphericalRefraction(OpticalElement):
         self.propagate_ray(r1)
         dist = -r1.p()[1]/r1.k()[1]
         focus = r1.p()[2] + dist * r1.k()[2]
+        # expected = self.n2 / (self.curve * (self.n2 - self.n1))
+        # print(expected)
+        print("The paraxial focus is: " + str(focus))
         return focus
 
 class OutputPlane(OpticalElement):
