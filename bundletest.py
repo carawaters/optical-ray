@@ -15,15 +15,19 @@ output = rt.OutputPlane(z_1 = surface.paraxial_focus())
 
 fig1 = plt.figure()
 ax1 = plt.axes()
+ax1.set_title('z = 0')
+
 fig2 = plt.figure()
 ax2 = plt.axes()
+ax2.set_title('paraxial focus')
 
-beam = Bundle(5, 3)
+beam = Bundle(2, 3)
 origins = beam.con_circs()
 
 foc_x = []
 foc_y = []
 
+# loop through each ray in the collimated beam and plot points at their origin and the paraxial focus
 for o in origins:
     x1 = []
     y1 = []
@@ -34,7 +38,6 @@ for o in origins:
     x1.append(points[1][0])
     y1.append(points[1][1])
     ax1.plot(x1, y1, 'r.')
-    ax1.set_title('z = 0')
 
     x2 = []
     y2 = []
@@ -45,8 +48,8 @@ for o in origins:
     foc_y.append(y2)
 
     ax2.plot(x2, y2, 'b.')
-    ax2.set_title('paraxial focus')
 
+# calculates the rms deviation for each of x and y from the expected focus (0, 0)
 rmsd_x = sp.sqrt(sp.sum((-sp.array(foc_x))**2)/len(foc_x))
 rmsd_y = sp.sqrt(sp.sum((-sp.array(foc_y))**2)/len(foc_y))
 
