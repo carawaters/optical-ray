@@ -142,6 +142,9 @@ class SphericalRefraction(OpticalElement):
             ray.status = "terminated"
 
     def normal(self, ray):
+        """
+        :return: normal vector to spherical surface at intercept
+        """
         if self.curve == 0:
             return sp.array([0., 0., 1.])
         else:
