@@ -47,11 +47,36 @@ class OpticalElement:
     Base class for all optical elements.
     """
 
-    def __init__(self, type):
+    def __init__(self, type, n1, n2):
         self.type = type
+        self.n1 = n1
+        self.n2 = n2
 
     def propagate_ray(self, ray):
         """propagate a ray through the optical element"""
+        raise NotImplementedError()
+
+    def snell(self, ray):
+        """
+        Carries out Snell's law.
+
+        :return: new direction of a ray vector after undergoing snell's law
+        """
+        # prevent total internal reflection
+        if (sp.sin(self.n1 / self.n2)) ** 2 > 1:
+            print("Ray could not be refracted.")
+            ray.status = "terminated"
+        elif ray.status == "terminated":
+            print("Ray is no longer propagating.")
+        else:
+            normal = self.normal(ray)
+            # carry out vector form of snell's law
+            root = sp.sqrt(1 - (self.n1 / self.n2) ** 2 * (1 - sp.dot(ray.k(), normal)))
+            new_direc = (self.n1 / self.n2) * ray.k() + (
+                        (self.n1 / self.n2) * sp.dot(ray.k(), normal) - root) * normal
+            return new_direc
+
+    def normal(self, ray):
         raise NotImplementedError()
 
 
@@ -63,12 +88,10 @@ class SphericalRefraction(OpticalElement):
     def __init__(self, z_0, curve, n1, n2, aperture):
         self.z_0 = z_0
         self.curve = curve
-        self.n1 = n1
-        self.n2 = n2
         self.aperture = aperture  # specifying in y direction
         self.origin = sp.array([0., 0., 0.])
         type = "spherical refractor"
-        OpticalElement.__init__(self, type)
+        OpticalElement.__init__(self, type, n1, n2)
 
     def intercept(self, ray):
         """
@@ -118,27 +141,13 @@ class SphericalRefraction(OpticalElement):
             print("Ray intercept not able to be found.")
             ray.status = "terminated"
 
-    def snell(self, ray):
-        """
-        Carries out Snell's law.
-
-        :return: new direction of a ray vector after undergoing snell's law
-        """
-        # prevent total internal reflection
-        if (sp.sin(self.n1 / self.n2)) ** 2 > 1:
-            print("Ray could not be refracted.")
-            ray.status = "terminated"
-        elif ray.status == "terminated":
-            print("Ray is no longer propagating.")
+    def normal(self, ray):
+        if self.curve == 0:
+            return sp.array([0., 0., 1.])
         else:
-            # find normal for a spherical surface - needs to be corrected for a plane
-            normal = self.intercept(ray) - self.origin
-            norm_hat = normal / sp.sqrt(sp.dot(normal, normal))
-            # carry out vector form of snell's law
-            root = sp.sqrt(1 - (self.n1 / self.n2) ** 2 * (1 - sp.dot(ray.k(), norm_hat)))
-            new_direc = (self.n1 / self.n2) * ray.k() + (
-                        (self.n1 / self.n2) * sp.dot(ray.k(), norm_hat) - root) * norm_hat
-            return new_direc
+            norm = self.intercept(ray) - self.origin
+            norm_hat = norm / sp.sqrt(sp.dot(norm, norm))
+            return norm_hat
 
     def propagate_ray(self, ray):
         intercept = self.intercept(ray)
@@ -157,14 +166,17 @@ class SphericalRefraction(OpticalElement):
 
         :return: predicted paraxial focus of the surface
         """
-        r1 = Ray(pos=[0., 0.1, 0.], direc=[0., 0., 1.])
-        self.propagate_ray(r1)
-        dist = -r1.p()[1] / r1.k()[1]
-        focus = r1.p()[2] + dist * r1.k()[2]
-        # expected = self.n2 / (self.curve * (self.n2 - self.n1))
-        # print(expected)
-        print("The paraxial focus is: " + str(focus) + "mm")
-        return focus
+        if self.curve < 0:
+            print("No real focus.")
+        else:
+            r1 = Ray(pos=[0., 0.1, 0.], direc=[0., 0., 1.])
+            self.propagate_ray(r1)
+            dist = -r1.p()[1] / r1.k()[1]
+            focus = r1.p()[2] + dist * r1.k()[2]
+            # expected = self.n2 / (self.curve * (self.n2 - self.n1))
+            # print(expected)
+            print("The paraxial focus is: " + str(focus) + "mm")
+            return focus
 
 
 class OutputPlane(OpticalElement):
@@ -175,7 +187,7 @@ class OutputPlane(OpticalElement):
     def __init__(self, z_1):
         type = "output plane"
         self.z_1 = z_1
-        OpticalElement.__init__(self, type)
+        OpticalElement.__init__(self, type, n1=None, n2=None)
 
     def intercept(self, ray):
         if ray.status == "terminated":
