@@ -12,13 +12,13 @@ from raybundle import Bundle
 from mpl_toolkits import mplot3d
 import scipy as sp
 
-lens = ln.ConvexPlano(z=20, curve=0.02, separation=5, n1=1, n2=1.5168, aperture=30)
+lens = ln.BiConvex(z=20, curve=0.02, separation=5, n1=1, n2=1.5168, aperture=30)
 output = rt.OutputPlane(z_1 = lens.paraxial_focus())
 
 beam = Bundle(5, 3)
 origins = beam.con_circs()
 
-
+"""
 fig1 = plt.figure()
 ax1 = plt.axes()
 ax1.set_title('z = 0')
@@ -59,10 +59,10 @@ print("The RMSD for the x direction is: " + str(rmsd_x))
 print("The RMSD for the y direction is: " + str(rmsd_y))
 """
 
-for i in range(-10, 10):
+for i in range(-50, 50):
     y = []
     z = []
-    r = rt.Ray(pos = [0., i, 0.], direc=[0., 0, 1.])
+    r = rt.Ray(pos = [0., 0.25 * i, 0.], direc=[0., 0, 1.])
     lens.propagate_ray(r)
     output.propagate_ray(r)
     points = r.vertices()
@@ -71,7 +71,7 @@ for i in range(-10, 10):
         z.append(point[2])
     plt.plot(z, y, 'r-')
 
-
+"""
 for i in range(-10, 10):
     y = []
     z = []
