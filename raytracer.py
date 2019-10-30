@@ -47,10 +47,11 @@ class OpticalElement:
     Base class for all optical elements.
     """
 
-    def __init__(self, type, n1, n2):
+    def __init__(self, type, n1, n2, curve):
         self.type = type
         self.n1 = n1
         self.n2 = n2
+        self.curve = curve
 
     def propagate_ray(self, ray):
         """propagate a ray through the optical element"""
@@ -69,15 +70,38 @@ class OpticalElement:
         elif ray.status == "terminated":
             print("Ray is no longer propagating.")
         else:
-            normal = self.normal(ray)
-            # carry out vector form of snell's law
-            root = sp.sqrt(1 - (self.n1 / self.n2) ** 2 * (1 - sp.dot(ray.k(), normal)))
-            new_direc = (self.n1 / self.n2) * ray.k() + (
+            if self.n2 > self.n1:
+                normal = self.normal(ray)
+                # carry out vector form of snell's law
+                root = sp.sqrt(1 - (self.n1 / self.n2) ** 2 * (1 - sp.dot(ray.k(), normal)))
+                new_direc = (self.n1 / self.n2) * ray.k() + (
+                        (self.n1 / self.n2) * sp.dot(ray.k(), normal) - root) * normal
+            else:
+                normal = self.normal(ray)
+                # carry out vector form of snell's law
+                root = sp.sqrt(1 - (self.n1 / self.n2) ** 2 * (1 + sp.dot(ray.k(), normal)))
+                new_direc = (self.n1 / self.n2) * ray.k() + (
                         (self.n1 / self.n2) * sp.dot(ray.k(), normal) - root) * normal
             return new_direc
 
     def normal(self, ray):
         raise NotImplementedError()
+
+    def paraxial_focus(self):
+        """
+        Calculates paraxial focus by propogating rays close to the optical axis and finding their intercept.
+
+        :return: predicted paraxial focus of the surface
+        """
+        if self.curve < 0:
+            print("No real focus.")
+        else:
+            r1 = Ray(pos=[0., 0.1, 0.], direc=[0., 0., 1.])
+            self.propagate_ray(r1)
+            dist = -r1.p()[1] / r1.k()[1]
+            focus = r1.p()[2] + dist * r1.k()[2]
+            print("The paraxial focus is: " + str(focus) + "mm")
+            return focus
 
 
 class SphericalRefraction(OpticalElement):
@@ -91,7 +115,7 @@ class SphericalRefraction(OpticalElement):
         self.aperture = aperture  # specifying in y direction
         self.origin = sp.array([0., 0., 0.])
         type = "spherical refractor"
-        OpticalElement.__init__(self, type, n1, n2)
+        OpticalElement.__init__(self, type, n1, n2, curve)
 
     def intercept(self, ray):
         """
@@ -114,7 +138,7 @@ class SphericalRefraction(OpticalElement):
             ray_len = sp.dot(ray.k(), op)
             # calculate discriminant of solution to quadratic
             disc = ray_len ** 2 - (sp.dot(op, op) - (1 / self.curve) ** 2)
-            if disc <= 0:
+            if disc < 0:
                 print("Imaginary solution.")
                 ray.status = "terminated"
             else:
@@ -129,7 +153,7 @@ class SphericalRefraction(OpticalElement):
             op = self.origin - ray.p()
             ray_len = sp.dot(ray.k(), op)
             disc = ray_len ** 2 - (sp.dot(op, op) - (1 / self.curve) ** 2)
-            if disc <= 0:
+            if disc < 0:
                 print("Imaginary solution.")
                 ray.status = "terminated"
             else:
@@ -160,26 +184,9 @@ class SphericalRefraction(OpticalElement):
         # test for ray not intercepting due to aperture
         elif intercept[1] > self.aperture:
             print("Ray does not intercept surface.")
+            ray.status = "terminated"
         else:
             ray.point_append(intercept, newdirec)
-
-    def paraxial_focus(self):
-        """
-        Calculates paraxial focus by propogating rays close to the optical axis and finding their intercept.
-
-        :return: predicted paraxial focus of the surface
-        """
-        if self.curve < 0:
-            print("No real focus.")
-        else:
-            r1 = Ray(pos=[0., 0.1, 0.], direc=[0., 0., 1.])
-            self.propagate_ray(r1)
-            dist = -r1.p()[1] / r1.k()[1]
-            focus = r1.p()[2] + dist * r1.k()[2]
-            # expected = self.n2 / (self.curve * (self.n2 - self.n1))
-            # print(expected)
-            print("The paraxial focus is: " + str(focus) + "mm")
-            return focus
 
 
 class OutputPlane(OpticalElement):
@@ -190,7 +197,7 @@ class OutputPlane(OpticalElement):
     def __init__(self, z_1):
         type = "output plane"
         self.z_1 = z_1
-        OpticalElement.__init__(self, type, n1=None, n2=None)
+        OpticalElement.__init__(self, type, n1=None, n2=None, curve=None)
 
     def intercept(self, ray):
         if ray.status == "terminated":
