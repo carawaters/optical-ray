@@ -18,7 +18,7 @@ output = rt.OutputPlane(z_1 = lens.paraxial_focus())
 beam = Bundle(5, 3)
 origins = beam.con_circs()
 
-"""
+
 fig1 = plt.figure()
 ax1 = plt.axes()
 ax1.set_title('z = 0')
@@ -59,10 +59,10 @@ print("The RMSD for the x direction is: " + str(rmsd_x))
 print("The RMSD for the y direction is: " + str(rmsd_y))
 """
 
-for i in range(-50, 50):
+for i in range(-10, 10):
     y = []
     z = []
-    r = rt.Ray(pos = [0., 0.25 * i, 0.], direc=[0., 0, 1.])
+    r = rt.Ray(pos = [0., i, 0.], direc=[0., 0, 1.])
     lens.propagate_ray(r)
     output.propagate_ray(r)
     points = r.vertices()
@@ -71,7 +71,7 @@ for i in range(-50, 50):
         z.append(point[2])
     plt.plot(z, y, 'r-')
 
-"""
+
 for i in range(-10, 10):
     y = []
     z = []
