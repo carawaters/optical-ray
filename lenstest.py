@@ -12,7 +12,7 @@ from raybundle import Bundle
 from mpl_toolkits import mplot3d
 import scipy as sp
 
-lens = ln.PlanoConvex(z=20, curve=0.02, separation=5, n1=1, n2=1.5168, aperture=30)
+lens = ln.ConvexPlano(z=20, curve=0.02, separation=5, n1=1, n2=1.5168, aperture=30)
 output = rt.OutputPlane(z_1 = lens.paraxial_focus())
 
 beam = Bundle(5, 3)
@@ -57,8 +57,8 @@ rmsd_y = sp.sqrt(sp.sum((-sp.array(foc_y))**2)/len(foc_y))
 
 print("The RMSD for the x direction is: " + str(rmsd_x))
 print("The RMSD for the y direction is: " + str(rmsd_y))
-
 """
+
 for i in range(-10, 10):
     y = []
     z = []

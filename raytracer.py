@@ -70,17 +70,10 @@ class OpticalElement:
         elif ray.status == "terminated":
             print("Ray is no longer propagating.")
         else:
-            if self.n2 > self.n1:
-                normal = self.normal(ray)
-                # carry out vector form of snell's law
-                root = sp.sqrt(1 - (self.n1 / self.n2) ** 2 * (1 - sp.dot(ray.k(), normal)))
-                new_direc = (self.n1 / self.n2) * ray.k() + (
-                        (self.n1 / self.n2) * sp.dot(ray.k(), normal) - root) * normal
-            else:
-                normal = self.normal(ray)
-                # carry out vector form of snell's law
-                root = sp.sqrt(1 - (self.n1 / self.n2) ** 2 * (1 + sp.dot(ray.k(), normal)))
-                new_direc = (self.n1 / self.n2) * ray.k() + (
+            normal = self.normal(ray)
+            # carry out vector form of snell's law
+            root = sp.sqrt(1 - (self.n1 / self.n2) ** 2 * (1 - abs(sp.dot(ray.k(), normal))))
+            new_direc = (self.n1 / self.n2) * ray.k() + (
                         (self.n1 / self.n2) * sp.dot(ray.k(), normal) - root) * normal
             return new_direc
 
@@ -127,7 +120,7 @@ class SphericalRefraction(OpticalElement):
             print("The ray has terminated.")
         # for flat surface
         elif self.curve == 0:
-            length = self.z_0 / ray.k()[2]
+            length = (self.z_0 - ray.p()[2]) / ray.k()[2]
             plane_int = ray.p() + ray.k() * length
             return plane_int
         # for convex surface
