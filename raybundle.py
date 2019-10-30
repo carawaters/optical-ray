@@ -21,6 +21,11 @@ class Bundle:
         self._rays = []
 
     def circ_points(self, radius):
+        """
+        To generate the points around the circumference of a circle, evenly spaced according to the line density
+
+        :return: points around the circumference of a circle
+        """
         points = []
         # version which used self.radius in num - fig 6
         # version corrected to radius of this loop - fig 7
@@ -31,6 +36,11 @@ class Bundle:
         return points
 
     def con_circs(self):
+        """
+        To generate circumference points of multiple circles, spaced apart according to the line density
+
+        :return: points around the circumferences of concentric circles
+        """
         con_points = []
         for r in sp.linspace(0, self.radius, num = self.radius * self.density, endpoint = True):
             new_points = self.circ_points(r)
