@@ -158,7 +158,7 @@ class SphericalRefraction(OpticalElement):
         if ray.status == "terminated":
             print("Ray is no longer propagating.")
         # test for ray not intercepting due to aperture
-        elif intercept[1] > self.aperture:
+        elif intercept[1] > self.aperture or intercept[0] > self.aperture:
             print("Ray does not intercept surface.")
         else:
             ray.point_append(intercept, newdirec)
