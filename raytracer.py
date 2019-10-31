@@ -2,7 +2,7 @@
 Author: Cara
 Created: 12/10/2019 21:41
 
-Includes a class for an optical ray.
+Includes classes for an optical ray and different optical elements to propagate a ray through.
 """
 
 import scipy as sp
@@ -90,6 +90,7 @@ class OpticalElement:
             print("No real focus.")
         else:
             r1 = Ray(pos=[0., 0.1, 0.], direc=[0., 0., 1.])
+            r2 = Ray(pos=[0., -0.1, 0.], direc=[0., 0., 1.])
             self.propagate_ray(r1)
             dist = -r1.p()[1] / r1.k()[1]
             focus = r1.p()[2] + dist * r1.k()[2]
