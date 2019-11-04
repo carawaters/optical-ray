@@ -72,7 +72,7 @@ class OpticalElement:
         else:
             normal = self.normal(ray)
             # carry out vector form of snell's law
-            root = sp.sqrt(1 - (self.n1 / self.n2) ** 2 * (1 - abs(sp.dot(ray.k(), normal))))
+            root = sp.sqrt(1 - ((self.n1 / self.n2) ** 2) * (1 - (sp.dot(ray.k(), normal))**2))
             new_direc = (self.n1 / self.n2) * ray.k() + (
                         (self.n1 / self.n2) * sp.dot(ray.k(), normal) - root) * normal
             return new_direc
@@ -164,7 +164,7 @@ class SphericalRefraction(OpticalElement):
         :return: normal vector to spherical surface at intercept
         """
         if self.curve == 0:
-            return sp.array([0., 0., 1.])
+            return sp.array([0., 0., -1.])
         else:
             norm = self.intercept(ray) - self.origin
             norm_hat = norm / sp.sqrt(sp.dot(norm, norm))
